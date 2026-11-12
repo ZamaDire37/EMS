@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bucks EMS Cloud Hub</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- AUTHENTICATION CONTAINER -->
+  <div id="authContainer" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-brand-icon">🚑</div>
+        <h2>Bucks EMS Cloud Hub</h2>
+        <p>Enterprise EMS Operations, Clinical & Compliance Platform</p>
+      </div>
+
+      <!-- Quick 1-Click Shortcut Button -->
+      <div class="shortcut-bar">
+        <button id="shortcutBypassBtn" type="button" class="shortcut-btn">
+          ⚡ Quick 1-Click Instant Entrance (Medical Director)
+        </button>
+      </div>
+
+      <div class="divider"><span>SELECT EMS POSITION</span></div>
+
+      <!-- SELECT POSITION DROPDOWN FORM -->
+      <form id="accountLoginForm" class="auth-form">
+        <div class="form-group">
+          <label for="accountSelect">Select EMS Position</label>
+          <select id="accountSelect" class="account-dropdown">
+            <option value="doctor" selected>🩺 Doctor / Medical Director</option>
+            <option value="nurse">💉 Emergency / Training Nurse</option>
+            <option value="medic">🚑 Field Medic</option>
+            <option value="flight">🚁 Flight Paramedic</option>
+            <option value="manager">🏢 Station Manager</option>
+            <option value="auditor">📋 QA Clinical / Clinical Audit</option>
+            <option value="dispatcher">📡 EMS Dispatcher</option>
+            <option value="admin">🔒 IT Admin</option>
+          </select>
+        </div>
+
+        <div class="account-preview" id="accountPreviewBox">
+          <span class="preview-role" id="previewRoleTag">DOCTOR / MEDICAL DIRECTOR</span>
+          <p id="previewDesc">Medical oversight, ePCR review, clinical analytics, and QA sign-off.</p>
+        </div>
+
+        <button type="submit" class="auth-btn-primary">Sign In as Selected Position</button>
+      </form>
+
+      <div class="divider"><span>OR CREDENTIAL LOGIN</span></div>
+
+      <form id="passwordLoginForm" class="auth-form compact-form">
+        <div class="grid-2-form">
+          <input id="loginUsername" type="text" placeholder="Username or Email" autocomplete="username" />
+          <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
+        </div>
+        <button type="submit" class="secondary full-btn">Sign In with Credentials</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP SHELL (HIDDEN UNTIL AUTHENTICATED) -->
+  <div id="appShell" class="app-shell hidden">
+    <div id="sidebarBackdrop" class="sidebar-backdrop hidden"></div>
+    <aside id="appSidebar" class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">🚑</div>
+        <div>
+          <h1>Bucks EMS Cloud Hub</h1>
+          <p>Owned by Bucks</p>
+        </div>
+      </div>
+
+      <div class="user-profile-card">
+        <div class="user-info">
+          <span class="user-label">Active Position:</span>
+          <strong id="userFullName">Doctor / Medical Director</strong>
+          <span id="userRoleBadge" class="role-badge">MEDICAL_DIRECTOR</span>
+          <span id="userFleetBadge" class="role-badge fleet-badge hidden">FLEET MANAGEMENT</span>
+        </div>
+        <button id="logoutBtn" class="logout-btn">Log Out</button>
+      </div>
+
+      <nav id="mainNav">
+        <button class="nav-btn active" data-page="dashboard">Dashboard</button>
+        <button class="nav-btn" data-page="incidents">Dispatch &amp; Timeline</button>
+        <button class="nav-btn" data-page="epcr">Patient Care Record</button>
+        <button class="nav-btn" data-page="vehicle">Vehicle Check</button>
+        <button class="nav-btn" data-page="fleet">Fleet &amp; Servicing</button>
+        <button class="nav-btn" data-page="staffdocs">Staff Compliance</button>
+        <button class="nav-btn" data-page="assets">Asset Verification</button>
+        <button class="nav-btn" data-page="audits">Clinical Audits</button>
+        <button class="nav-btn" data-page="analytics">Analytics &amp; Reports</button>
+        <button class="nav-btn" data-page="security">IT Security</button>
+      </nav>
+
+      <div class="security-status">
+        <h3>Bucks Security Status</h3>
+        <p><span class="dot green"></span> SQLite + Private Storage</p>
+        <p><span class="dot green"></span> Backend RBAC Enforced</p>
+        <p><span class="dot green" id="connDot"></span> <span id="connLabel">Online</span></p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-title-row">
+          <button id="mobileMenuBtn" type="button" class="mobile-menu-btn" aria-label="Open navigation menu">☰</button>
+          <div>
+            <h2 id="pageTitle">Dashboard</h2>
+            <p id="roleDescription">Operational overview and active compliance reminders.</p>
+          </div>
+        </div>
+        <div class="sync-panel">
+          <button id="networkToggle" class="secondary">Go Offline</button>
+          <button id="syncBtn">Sync Queue (<span id="queueCountBadge">0</span>)</button>
+        </div>
+      </header>
+
+      <!-- 1. DASHBOARD -->
+      <section id="dashboard" class="page active">
+        <div class="cards">
+          <div class="card metric"><span>Patient Records</span><strong id="recordCount">0</strong></div>
+          <div class="card metric"><span>Active Incidents</span><strong id="incidentCount">0</strong></div>
+          <div class="card metric"><span>Vehicle Checks</span><strong id="vehicleCount">0</strong></div>
+          <div class="card metric"><span>Active Reminders</span><strong id="reminderCount">0</strong></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Active Expiry &amp; Maintenance Reminders</h3>
+            <p class="muted">Automatically calculated from staff licences, vehicle compliance docs, and service schedules.</p>
+            <div id="dashboardReminders" class="record-list"></div>
+          </div>
+
+          <div class="card">
+            <h3>Offline Queue &amp; Sync</h3>
+            <p class="muted">When offline, supported field records &amp; timeline events queue safely with duplicate protection.</p>
+            <div id="queueList" class="queue-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. EMERGENCY DISPATCH & RESPONSE TIMELINE -->
+      <section id="incidents" class="page">
+        <div class="grid-2">
+          <!-- Dispatcher Create Call / Assign Panel -->
+          <div class="card form-card" id="dispatchCreateCard">
+            <h3>Emergency Call &amp; Dispatch</h3>
+            <p class="muted">Dispatcher records incoming emergency calls and assigns ambulances &amp; crews with automatic timestamps.</p>
+            <form id="incidentForm">
+              <div class="grid-2-form">
+                <div class="form-group">
+                  <label>Incident Type</label>
+                  <select id="incType">
+                    <option value="Cardiac Event / STEMI">Cardiac Event / STEMI</option>
+                    <option value="Medical Emergency">Medical Emergency</option>
+                    <option value="Motor Vehicle Trauma">Motor Vehicle Trauma</option>
+                    <option value="Respiratory Distress">Respiratory Distress</option>
+                    <option value="Stroke / Neurological">Stroke / Neurological</option>
+                    <option value="Aeromedical Transfer">Aeromedical Transfer</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Priority</label>
+                  <select id="incPriority">
+                    <option value="Red (P1 - Immediate)">Red (P1 - Immediate)</option>
+                    <option value="Yellow (P2 - Urgent)">Yellow (P2 - Urgent)</option>
+                    <option value="Green (P3 - Delayed)">Green (P3 - Delayed)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Location / Address</label>
+                <input id="incLocation" placeholder="e.g. 14 High Street, Aylesbury, Bucks" required />
+              </div>
+              <div class="grid-2-form">
+                <div class="form-group">
+                  <label>Caller Info</label>
+                  <input id="incCaller" placeholder="e.g. Bystander / 999 Control" />
+                </div>
+                <div class="form-group">
+                  <label>Assign Available Vehicle</label>
+                  <select id="incVehicleSelect">
+                    <option value="">-- Hold (Call Received Only) --</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid-2-form">
+                <div class="form-group">
+                  <label>Assigned Crew</label>
+                  <input id="incCrew" placeholder="e.g. Field Medic Crew A" />
+                </div>
+                <div class="form-group">
+                  <label>Destination Hospital</label>
+                  <input id="incHospital" placeholder="e.g. Central Hospital ED" />
+                </div>
+              </div>
+              <button type="submit">Record Emergency Call (Auto-Timestamp)</button>
+            </form>
+          </div>
+
+          <!-- Active Incident Selector & One-Tap Field Medic Timeline Controls -->
+          <div class="card">
+            <h3>Active Incident Timeline &amp; Field Actions</h3>
+            <div class="form-group">
+              <label>Select Incident</label>
+              <select id="activeIncidentSelect"></select>
+            </div>
+
+            <div id="gpsSafetyBar" class="gps-bar">
+              <label class="inline-check">
+                <input type="checkbox" id="gpsAssistToggle" />
+                <span>Enable GPS-assisted arrival verification (Medic/Passenger use only — never use while driving)</span>
+              </label>
+              <span id="gpsStatusText" class="muted">GPS idle</span>
+            </div>
+
+            <div id="medicActionBar" class="action-buttons-grid">
+              <button type="button" class="timeline-btn" data-event="ARRIVED_SCENE">🚑 Arrived at Scene</button>
+              <button type="button" class="timeline-btn" data-event="PATIENT_PICKED_UP">🛏️ Patient Picked Up</button>
+              <button type="button" class="timeline-btn" data-event="ARRIVED_HOSPITAL">🏥 Arrived at Hospital</button>
+              <button type="button" class="timeline-btn" data-event="PATIENT_HANDED_OVER">🤝 Patient Handed Over</button>
+            </div>
+
+            <div id="dispatcherActionBar" class="action-buttons-row">
+              <button type="button" id="markAvailableBtn" class="secondary">✅ Record Ambulance Available Again</button>
+            </div>
+
+            <div id="handoverConfirmBox" class="sub-panel">
+              <h4>Hospital Handover Confirmation (Doctor / Nurse)</h4>
+              <div class="form-group">
+                <textarea id="handoverConfirmNotes" placeholder="Receiving doctor/nurse handover notes..."></textarea>
+              </div>
+              <button type="button" id="confirmHandoverBtn">Confirm Patient Handover</button>
+            </div>
+
+            <div id="incidentDetailHeader" class="incident-summary"></div>
+            <div id="incidentTimelineList" class="timeline-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. EXTENDED ePCR PATIENT CARE RECORD SECTION -->
+      <section id="epcr" class="page">
+        <div class="epcr-layout">
+          <div class="card form-card epcr-form-card">
+            <h3>Comprehensive Patient Care Record (ePCR)</h3>
+            <p class="muted">Complete patient clinical data required for Doctor &amp; Nurse handover and clinical review.</p>
+
+            <div class="form-tabs">
+              <button type="button" class="form-tab active" data-tab="tab-demographics">1. Demographics &amp; Triage</button>
+              <button type="button" class="form-tab" data-tab="tab-history">2. Clinical History</button>
+              <button type="button" class="form-tab" data-tab="tab-vitals">3. Vitals &amp; GCS</button>
+              <button type="button" class="form-tab" data-tab="tab-interventions">4. Interventions &amp; ECG</button>
+              <button type="button" class="form-tab" data-tab="tab-handover">5. Clinical Handover</button>
+            </div>
+
+            <form id="epcrForm">
+              <div id="tab-demographics" class="form-section active">
+                <h4 class="section-title">Section 1: Patient Demographics &amp; Triage</h4>
+                <div class="grid-2-form">
+                  <div class="form-group">
+                    <label>Link to Incident ID (Optional)</label>
+                    <select id="epcrIncidentId">
+                      <option value="">-- Standalone ePCR --</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Patient Status</label>
+                    <label class="inline-check"><input type="checkbox" id="isReturning" /> Returning Patient</label>
+                  </div>
+                </div>
+                <div class="grid-2-form">
+                  <div class="form-group">
+                    <label>Patient Full Name / ID Code</label>
+                    <input id="patientName" placeholder="e.g. Case #EMS-9402" required />
+                  </div>
+                  <div class="form-group">
+                    <label>Age &amp; Gender</label>
+                    <div class="inline-inputs">
+                      <input id="patientAge" type="number" placeholder="Age" />
+                      <select id="patientGender">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid-2-form">
+                  <div class="form-group">
+                    <label>Triage Priority Level</label>
+                    <select id="triagePriority" class="triage-select">
+                      <option value="Red (P1 - Immediate / Resuscitation)">🔴 Red (P1 - Immediate / Resuscitation)</option>
+                      <option value="Yellow (P2 - Urgent)">🟡 Yellow (P2 - Urgent)</option>
+                      <option value="Green (P3 - Delayed / Non-Urgent)" selected>🟢 Green (P3 - Delayed / Non-Urgent)</option>
+                      <option value="Black (P0 - Deceased)">⚫ Black (P0 - Deceased)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Incident Type</label>
+                    <select id="incidentType">
+                      <option value="Medical Emergency">Medical Emergency</option>
+                      <option value="Cardiac Event / STEMI">Cardiac Event / STEMI</option>
+                      <option value="Respiratory Distress">Respiratory Distress</option>
+                      <option value="Motor Vehicle Trauma">Motor Vehicle Trauma</option>
+                      <option value="Stroke / Neurological">Stroke / Neurological</option>
+                      <option value="Sepsis / Shock">Sepsis / Shock</option>
+                      <option value="Pediatric Emergency">Pediatric Emergency</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Primary Chief Complaint &amp; Onset Time</label>
+                  <input id="primaryComplaint" placeholder="e.g. Severe retrosternal chest pain (Onset: 45 mins ago)" required />
+                </div>
+              </div>
+
+              <div id="tab-history" class="form-section">
+                <h4 class="section-title">Section 2: Past Medical History &amp; Allergies</h4>
+                <div class="form-group">
+                  <label>Past Medical History (PMH)</label>
+                  <input id="pastHistory" placeholder="e.g. Hypertension, Type 2 Diabetes" />
+                </div>
+                <div class="form-group">
+                  <label>Known Allergies (NKA if none)</label>
+                  <input id="allergies" placeholder="e.g. Penicillin (Anaphylaxis), NKA" />
+                </div>
+                <div class="form-group">
+                  <label>Current Medications</label>
+                  <textarea id="currentMedications" placeholder="List regular prescribed medications"></textarea>
+                </div>
+              </div>
+
+              <div id="tab-vitals" class="form-section">
+                <h4 class="section-title">Section 3: Comprehensive Vital Signs &amp; Neurological Score</h4>
+                <div class="vitals-grid">
+                  <div class="form-group"><label>Blood Pressure</label><input id="bp" placeholder="135/85 mmHg" /></div>
+                  <div class="form-group"><label>Heart Rate</label><input id="pulse" placeholder="98 bpm" /></div>
+                  <div class="form-group"><label>SpO₂ (%)</label><input id="spo2" placeholder="94%" /></div>
+                  <div class="form-group"><label>Resp. Rate</label><input id="respRate" placeholder="20 /min" /></div>
+                  <div class="form-group"><label>Blood Glucose</label><input id="glucose" placeholder="6.4 mmol/L" /></div>
+                  <div class="form-group"><label>Temperature</label><input id="temp" placeholder="37.2 °C" /></div>
+                </div>
+                <div class="form-group">
+                  <label>Glasgow Coma Scale (GCS) &amp; Pain Score</label>
+                  <div class="inline-inputs">
+                    <select id="gcsScore">
+                      <option value="15 (E4 V5 M6 - Alert & Oriented)">GCS 15 (Fully Alert)</option>
+                      <option value="14 (E4 V4 M6 - Mild Confusion)">GCS 14 (Mild Confusion)</option>
+                      <option value="12 (E3 V4 M5 - Lethargic)">GCS 12 (Lethargic)</option>
+                      <option value="9 (E2 V3 M4 - Severe Impairment)">GCS 9 (Severe Impairment)</option>
+                      <option value="3 (E1 V1 M1 - Unresponsive)">GCS 3 (Unresponsive)</option>
+                    </select>
+                    <input id="painScore" placeholder="Pain (0-10)" />
+                  </div>
+                </div>
+              </div>
+
+              <div id="tab-interventions" class="form-section">
+                <h4 class="section-title">Section 4: Clinical Interventions, Medications &amp; ECG</h4>
+                <div class="grid-2-form">
+                  <div class="form-group">
+                    <label>12-Lead ECG Assessment</label>
+                    <select id="ecgResult">
+                      <option value="Normal Sinus Rhythm (NSR)">Normal Sinus Rhythm (NSR)</option>
+                      <option value="ST-Elevation Myocardial Infarction (STEMI)">ST-Elevation (STEMI)</option>
+                      <option value="Atrial Fibrillation (AFib)">Atrial Fibrillation (AFib)</option>
+                      <option value="Ventricular Tachycardia (VTach)">Ventricular Tachycardia (VTach)</option>
+                      <option value="Asystole / PEA">Asystole / PEA</option>
+                      <option value="Not Performed">Not Performed</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Airway &amp; Oxygenation</label>
+                    <input id="airwaySupport" placeholder="e.g. NRB Mask @ 15L/min" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Medications Administered</label>
+                  <textarea id="medsAdministered" placeholder="e.g. Aspirin 300mg PO @ 14:10"></textarea>
+                </div>
+                <div class="form-group">
+                  <label>Fluid Resuscitation / IV Line</label>
+                  <input id="ivFluids" placeholder="e.g. 18G IV Left Antecubital, 500mL Normal Saline" />
+                </div>
+              </div>
+
+              <div id="tab-handover" class="form-section">
+                <h4 class="section-title">Section 5: Hospital Destination &amp; Clinical Handover</h4>
+                <div class="grid-2-form">
+                  <div class="form-group"><label>Receiving Facility</label><input id="hospital" placeholder="e.g. Central Hospital ED" /></div>
+                  <div class="form-group"><label>Attending Doctor / Nurse</label><input id="handoverDoctor" placeholder="e.g. Triage Charge Nurse" /></div>
+                </div>
+                <div class="form-group">
+                  <label>Disposition</label>
+                  <select id="epcrDisposition">
+                    <option value="Admitted">Admitted</option>
+                    <option value="Discharged">Discharged</option>
+                    <option value="Transferred">Transferred</option>
+                    <option value="Refused Treatment">Refused Treatment</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Clinical Handover Summary &amp; Nursing Notes</label>
+                  <textarea id="treatment" placeholder="Complete summary of EMS interventions and patient response."></textarea>
+                </div>
+                <button type="submit" class="submit-epcr-btn">Save Complete Clinical ePCR Record</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>Clinical ePCR Records</h3>
+            <div id="recordsList" class="record-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. DAILY VEHICLE CHECK -->
+      <section id="vehicle" class="page">
+        <div class="grid-2">
+          <form id="vehicleForm" class="card form-card">
+            <h3>Daily Vehicle Check</h3>
+            <label>Vehicle / Ambulance ID</label>
+            <input id="vehicleId" placeholder="e.g. AMB-001" required />
+            <label>Checklist</label>
+            <div class="checklist">
+              <label><input type="checkbox" id="lights" /> Lights working</label>
+              <label><input type="checkbox" id="sirens" /> Sirens working</label>
+              <label><input type="checkbox" id="fuel" /> Fuel checked</label>
+              <label><input type="checkbox" id="tyres" /> Tyres checked</label>
+              <label><input type="checkbox" id="oxygen" /> Oxygen level checked</label>
+            </div>
+            <label>Proof Note / Photo Reference</label>
+            <input id="vehicleProof" placeholder="e.g. shiftA_check_ok" />
+            <button type="submit">Submit Vehicle Check</button>
+          </form>
+
+          <div class="card">
+            <h3>Vehicle Check History</h3>
+            <div id="vehicleList" class="record-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. FLEET, SERVICING & COMPLIANCE (STATION MANAGER / FLEET PROFILE) -->
+      <section id="fleet" class="page">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Fleet Vehicles &amp; Compliance</h3>
+            <div id="fleetVehicleCards" class="record-list"></div>
+
+            <form id="addVehicleForm" class="sub-panel">
+              <h4>Add New Vehicle Profile</h4>
+              <div class="grid-2-form">
+                <input id="newVehId" placeholder="Vehicle ID (e.g. AMB-003)" required />
+                <input id="newVehReg" placeholder="Registration (e.g. BCK-003-GP)" required />
+              </div>
+              <div class="grid-2-form">
+                <input id="newVehModel" placeholder="Make &amp; Model" required />
+                <select id="newVehType">
+                  <option value="Ambulance">Ambulance</option>
+                  <option value="Rapid Response">Rapid Response</option>
+                  <option value="Helicopter">Helicopter</option>
+                </select>
+              </div>
+              <div class="grid-2-form">
+                <div class="form-group"><label>Licence Disc Expiry</label><input id="newVehLicenceExp" type="date" /></div>
+                <div class="form-group"><label>Roadworthiness Expiry</label><input id="newVehRoadExp" type="date" /></div>
+              </div>
+              <button type="submit">Add Vehicle</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>Selected Vehicle Profile: <span id="selectedFleetVehTitle">None</span></h3>
+            <div id="selectedFleetSummary" class="muted">Select a vehicle from the left to view service history and compliance documents.</div>
+
+            <form id="addServiceForm" class="sub-panel hidden">
+              <h4>Log Vehicle Service Entry</h4>
+              <div class="grid-2-form">
+                <div class="form-group"><label>Service Date</label><input id="svcDate" type="date" required /></div>
+                <div class="form-group"><label>Recorded Mileage (Optional)</label><input id="svcMileage" type="number" placeholder="Only if verified on doc" /></div>
+              </div>
+              <div class="form-group"><label>Work Performed</label><textarea id="svcWork" placeholder="e.g. Major 15,000km service, brake pads replaced" required></textarea></div>
+              <div class="grid-2-form">
+                <input id="svcProvider" placeholder="Service Provider" />
+                <input id="svcCost" type="number" step="0.01" placeholder="Cost (Optional)" />
+              </div>
+              <div class="grid-2-form">
+                <div class="form-group"><label>Next Service Date</label><input id="svcNextDate" type="date" /></div>
+                <div class="form-group"><label>Next Service Mileage (Optional)</label><input id="svcNextMileage" type="number" placeholder="Optional" /></div>
+              </div>
+              <button type="submit">Save Service Entry</button>
+            </form>
+
+            <form id="uploadVehDocForm" class="sub-panel hidden">
+              <h4>Attach Service or Compliance Document (Upload / Camera + OCR)</h4>
+              <div class="grid-2-form">
+                <div class="form-group">
+                  <label>Document Category</label>
+                  <select id="vehDocCategory">
+                    <option value="Service Receipt">Service Receipt</option>
+                    <option value="Invoice">Invoice</option>
+                    <option value="Service Report">Service Report</option>
+                    <option value="Inspection Document">Inspection Document</option>
+                    <option value="Licence Disc">Licence Disc</option>
+                    <option value="Roadworthiness Certificate">Roadworthiness Certificate</option>
+                    <option value="Renewal Document">Renewal Document</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Expiry Date (Confirm OCR or Enter)</label>
+                  <input id="vehDocExpiry" type="date" />
+                </div>
+              </div>
+              <div class="upload-actions-row">
+                <input id="vehDocFile" type="file" accept="image/*,application/pdf" />
+                <button type="button" id="vehCameraBtn" class="secondary">📷 Open Camera</button>
+                <button type="button" id="vehOcrBtn" class="secondary">🔍 Run OCR</button>
+              </div>
+              <p id="vehOcrStatus" class="muted"></p>
+              <button type="submit">Save Vehicle Document</button>
+            </form>
+
+            <div id="fleetServiceHistory" class="record-list"></div>
+            <div id="fleetDocHistory" class="record-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. STAFF LICENCES, CERTIFICATES & DOCUMENT EXPIRY -->
+      <section id="staffdocs" class="page">
+        <div class="grid-2">
+          <div class="card form-card">
+            <h3>Staff Document Upload, Camera &amp; OCR</h3>
+            <p class="muted">Upload or photograph licences, medical &amp; training certificates. OCR results always require confirmation before saving.</p>
+            <form id="staffDocForm">
+              <div class="grid-2-form">
+                <div class="form-group">
+                  <label>Staff Member</label>
+                  <select id="staffDocUserSelect"></select>
+                </div>
+                <div class="form-group">
+                  <label>Document Type</label>
+                  <select id="staffDocType">
+                    <option value="Professional Licence">Professional Licence</option>
+                    <option value="Medical Certificate">Medical Certificate</option>
+                    <option value="Training Certificate">Training Certificate</option>
+                    <option value="Renewal Document">Renewal Document</option>
+                    <option value="Other Qualification">Other Qualification</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="upload-actions-row">
+                <input id="staffDocFile" type="file" accept="image/*,application/pdf" />
+                <button type="button" id="staffCameraBtn" class="secondary">📷 Open Camera</button>
+                <button type="button" id="staffOcrBtn" class="secondary">🔍 Extract via OCR</button>
+              </div>
+              <div id="staffOcrBanner" class="ocr-banner hidden"></div>
+
+              <div class="grid-2-form">
+                <div class="form-group"><label>Licence / Cert Number</label><input id="staffDocNumber" placeholder="Confirm or enter manually" /></div>
+                <div class="form-group"><label>Issue Date</label><input id="staffDocIssueDate" type="date" /></div>
+              </div>
+              <div class="grid-2-form">
+                <div class="form-group"><label>Expiry / Renewal Date</label><input id="staffDocExpiryDate" type="date" /></div>
+                <div class="form-group"><label>Submission Type</label><label class="inline-check"><input type="checkbox" id="staffDocIsRenewal" /> Renewal awaiting verification</label></div>
+              </div>
+
+              <button type="submit">Confirm &amp; Save Privately</button>
+            </form>
+
+            <div id="reminderConfigPanel" class="sub-panel">
+              <h4>Configurable Reminder Intervals (Days Before Expiry)</h4>
+              <div class="grid-2-form">
+                <input id="reminderIntervalsInput" value="30, 14, 7, 0" placeholder="e.g. 30, 14, 7, 0" />
+                <button type="button" id="saveReminderSettingsBtn" class="secondary">Save Intervals</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Staff Compliance Documents</h3>
+            <div id="staffDocsList" class="record-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. ASSET VERIFICATION -->
+      <section id="assets" class="page">
+        <div class="grid-2">
+          <form id="assetForm" class="card form-card">
+            <h3>Asset / Consumable Verification</h3>
+            <label>Asset Name</label>
+            <input id="assetName" placeholder="e.g. Defibrillator, Oxygen Cylinder" required />
+            <label>Asset Category</label>
+            <select id="assetCategory">
+              <option>Medical Equipment</option>
+              <option>Consumable</option>
+              <option>Medication</option>
+              <option>Vehicle Equipment</option>
+            </select>
+            <label>Status</label>
+            <select id="assetStatus">
+              <option>Available</option>
+              <option>Missing</option>
+              <option>Expired</option>
+              <option>Needs Maintenance</option>
+            </select>
+            <label>Notes</label>
+            <textarea id="assetNotes" placeholder="Condition, expiry date, quantity, or fault details"></textarea>
+            <button type="submit">Save Asset Check</button>
+          </form>
+
+          <div class="card">
+            <h3>Asset Verification List</h3>
+            <div id="assetList" class="record-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. CLINICAL AUDITS -->
+      <section id="audits" class="page">
+        <div class="grid-2">
+          <form id="auditForm" class="card form-card">
+            <h3>Clinical Audit Review</h3>
+            <label>Patient Record</label>
+            <select id="auditRecordSelect"></select>
+            <label>Audit Outcome</label>
+            <select id="auditOutcome">
+              <option>Approved by Doctor / Medical Director</option>
+              <option>Needs Protocol Correction</option>
+              <option>Escalated to Clinical Governance</option>
+            </select>
+            <label>Audit Notes</label>
+            <textarea id="auditNotes" placeholder="Structured Doctor / QA feedback"></textarea>
+            <button type="submit">Submit Audit</button>
+          </form>
+
+          <div class="card">
+            <h3>Audit Queue / Results</h3>
+            <div id="clinicalAuditList" class="record-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. OPERATIONAL ANALYTICS & REPORTS -->
+      <section id="analytics" class="page">
+        <div class="card filter-bar">
+          <div class="grid-2-form">
+            <div class="form-group"><label>From Date</label><input id="analyticsFrom" type="date" /></div>
+            <div class="form-group"><label>To Date</label><input id="analyticsTo" type="date" /></div>
+          </div>
+          <div class="action-buttons-row">
+            <button type="button" id="refreshAnalyticsBtn">Apply Filter</button>
+            <button type="button" id="exportAnalyticsBtn" class="secondary">⬇ Export Aggregated CSV</button>
+          </div>
+        </div>
+        <div id="analyticsContent" class="analytics-grid"></div>
+      </section>
+
+      <!-- 10. IT SECURITY, USER MANAGEMENT & AUDIT LOGS -->
+      <section id="security" class="page">
+        <div class="grid-2">
+          <div class="card">
+            <h3>User Accounts &amp; Fleet Management Profiles</h3>
+            <p class="muted">Create users manually (no public sign-up) and assign Fleet Management permissions without adding a 9th job title.</p>
+
+            <form id="createUserForm" class="sub-panel">
+              <h4>Create Staff Account</h4>
+              <div class="grid-2-form">
+                <input id="newUserUsername" placeholder="Username" required />
+                <input id="newUserEmail" type="email" placeholder="Email" required />
+              </div>
+              <div class="grid-2-form">
+                <input id="newUserFullName" placeholder="Full Name" required />
+                <input id="newUserPassword" type="password" placeholder="Temporary Password" required />
+              </div>
+              <div class="grid-2-form">
+                <select id="newUserRole">
+                  <option value="MEDICAL_DIRECTOR">Doctor / Medical Director</option>
+                  <option value="TRIAGE_NURSE">Emergency / Training Nurse</option>
+                  <option value="FIELD_MEDIC">Field Medic</option>
+                  <option value="FLIGHT_MEDIC">Flight Paramedic</option>
+                  <option value="STATION_MANAGER">Station Manager</option>
+                  <option value="QA_AUDITOR">QA Clinical / Clinical Audit</option>
+                  <option value="DISPATCHER">EMS Dispatcher</option>
+                  <option value="IT_ADMIN">IT Admin</option>
+                </select>
+                <label class="inline-check"><input type="checkbox" id="newUserFleet" /> Grant Fleet Management</label>
+              </div>
+              <button type="submit">Create Account</button>
+            </form>
+
+            <div id="usersManagementList" class="record-list"></div>
+          </div>
+
+          <div class="card">
+            <h3>Immutable Audit Log</h3>
+            <p class="muted">Protected at database level against modification or deletion.</p>
+            <div id="auditLogs" class="audit-log"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- CAMERA CAPTURE MODAL (PREVIEW, RETAKE, CROP, ROTATE, MULTI-PAGE) -->
+  <div id="cameraModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Document Camera Capture</h3>
+        <button type="button" id="closeCameraModal" class="secondary">✕</button>
+      </div>
+      <div class="camera-stage">
+        <video id="cameraVideo" autoplay playsinline></video>
+        <canvas id="cameraCanvas" class="hidden"></canvas>
+      </div>
+      <div class="camera-controls">
+        <button type="button" id="capturePhotoBtn">📸 Capture Page</button>
+        <button type="button" id="retakePhotoBtn" class="secondary hidden">↺ Retake</button>
+        <button type="button" id="rotatePhotoBtn" class="secondary hidden">⟳ Rotate 90°</button>
+        <button type="button" id="cropPhotoBtn" class="secondary hidden">✂ Center Crop</button>
+        <button type="button" id="addPageBtn" class="secondary hidden">➕ Add Page (<span id="capturedPageCount">0</span>)</button>
+        <button type="button" id="submitCameraDocBtn" class="hidden">✔ Use Captured Document</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE CORRECTION MODAL -->
+  <div id="correctionModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Correct Historical Timestamp</h3>
+        <button type="button" id="closeCorrectionModal" class="secondary">✕</button>
+      </div>
+      <p class="muted">Historical timestamps cannot be silently edited. Original timestamp, editor, and reason are permanently logged.</p>
+      <form id="correctionForm">
+        <input type="hidden" id="corrIncidentId" />
+        <input type="hidden" id="corrEventId" />
+        <div class="form-group">
+          <label>New Timestamp (Local)</label>
+          <input id="corrTimestamp" type="datetime-local" required />
+        </div>
+        <div class="form-group">
+          <label>Mandatory Reason for Correction</label>
+          <textarea id="corrReason" placeholder="Explain why this timestamp is being corrected..." required></textarea>
+        </div>
+        <button type="submit">Save Documented Correction</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

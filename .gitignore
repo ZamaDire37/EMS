@@ -1,0 +1,8 @@
+node_modules/
+bucks_ems.db
+bucks_ems.db-wal
+bucks_ems.db-shm
+private_storage/
+*.traineddata
+.env
+.DS_Store
