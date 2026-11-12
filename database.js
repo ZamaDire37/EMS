@@ -2,7 +2,8 @@ const { DatabaseSync } = require('node:sqlite');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, 'bucks_ems.db');
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const dbPath = path.join(DATA_DIR, 'bucks_ems.db');
 const db = new DatabaseSync(dbPath);
 
 // Enable foreign keys & WAL mode for reliability

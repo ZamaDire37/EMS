@@ -24,8 +24,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Private storage directories (never exposed via static routes)
-const PRIVATE_STAFF_DIR = path.join(__dirname, 'private_storage', 'staff_docs');
-const PRIVATE_VEHICLE_DIR = path.join(__dirname, 'private_storage', 'vehicle_docs');
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const PRIVATE_STAFF_DIR = path.join(DATA_DIR, 'private_storage', 'staff_docs');
+const PRIVATE_VEHICLE_DIR = path.join(DATA_DIR, 'private_storage', 'vehicle_docs');
 fs.mkdirSync(PRIVATE_STAFF_DIR, { recursive: true });
 fs.mkdirSync(PRIVATE_VEHICLE_DIR, { recursive: true });
 

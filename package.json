@@ -2,8 +2,12 @@
   "name": "bucks-ems-cloud-demo",
   "version": "1.0.0",
   "description": "This is a simple JavaScript demo for Bucks' cloud-based EMS platform concept.",
-  "main": "app.js",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
